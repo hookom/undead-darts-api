@@ -1,4 +1,4 @@
-package com.undead-darts-api
+package com.undeaddarts
 
 import org.springframework.web.bind.annotation.*
 

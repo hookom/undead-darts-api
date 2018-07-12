@@ -1,4 +1,4 @@
-package com.undead-darts-api
+package com.undeaddarts
 
 import org.junit.Test
 import org.junit.runner.RunWith
