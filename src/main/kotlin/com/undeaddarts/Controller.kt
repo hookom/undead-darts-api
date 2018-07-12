@@ -8,6 +8,6 @@ data class Message(val text: String, val priority: String)
 class MessageController {
     @RequestMapping("/message")
     fun message(): Message {
-        return Message("Hello from Google Cloud", "High")
+        return Message("Hello from Google Cloud", "Low")
     }
 }
