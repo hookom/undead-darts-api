@@ -1,6 +1,5 @@
 package com.undeaddarts
 
-import com.google.auth.Credentials
 import com.google.cloud.datastore.*
 import org.springframework.web.bind.annotation.*
 
@@ -43,127 +42,126 @@ class Controller {
                 .setFilter(StructuredQuery.PropertyFilter.eq("season", season))
                 .build()
 
+        return mapQueryResultsToListOfRows(datastore.run(query))
+    }
+
+    @GetMapping("/changelog")
+    fun getChangelog(): List<Map<String, String>> {
+        val datastore = DatastoreOptions
+                .newBuilder()
+                .setProjectId("undead-darts-1")
+                .build()
+                .service
+
+        val query = Query
+                .newEntityQueryBuilder()
+                .setKind("ChangelogTest")
+                .setLimit(20)
+                .setOrderBy(StructuredQuery.OrderBy.desc("timestamp"))
+                .build()
+
+        return mapQueryResultsToListOfRows(datastore.run(query))
+    }
+
+    @GetMapping("/seasons")
+    fun getSeasons(): List<String> {
+        val datastore = DatastoreOptions
+                .newBuilder()
+                .setProjectId("undead-darts-1")
+                .build()
+                .service
+
+        val query = Query
+                .newProjectionEntityQueryBuilder()
+                .setKind("PlayerStatTest")
+                .setProjection("season")
+                .setDistinctOn("season")
+                .build()
+
+        return mapQueryResultsToListOfRows(datastore.run(query))
+                .map { row -> row.season }
+    }
+
+    @PostMapping("/add-player")
+    fun addPlayer(@RequestBody req: CreatePlayerRequest) {
+        val datastore = DatastoreOptions
+                .newBuilder()
+                .setProjectId("undead-darts-1")
+                .build()
+                .service
+
+        datastore.put(
+            Entity("PlayerStatTest").also {
+                // set fields to req fields
+            })
+    }
+
+    @PostMapping("/add-season")
+    fun addSeason(@RequestBody req: CreateSeasonRequest) {
+        val datastore = DatastoreOptions
+                .newBuilder()
+                .setProjectId("undead-darts-1")
+                .build()
+                .service
+
+        req.names.forEach { name ->
+            datastore.put(
+                Entity("PlayerStatTest").also {
+                    setProperty("statversion", req.statversion)
+                    setProperty("name", name)
+                    setProperty("season", req.id)
+                    // set other stat fields to 0
+                })
+        }
+    }
+
+    @PostMapping("/update-stat")
+    fun updateStat(@RequestBody req: UpdateStatRequest) {
+        val datastore = DatastoreOptions
+                .newBuilder()
+                .setProjectId("undead-darts-1")
+                .build()
+                .service
+
+        val query = Query
+                .newEntityQueryBuilder()
+                .setKind("PlayerStatTest")
+                .setFilter(PropertyFilter.eq("season", req.row.season))
+                .setFilter(PropertyFilter.eq("name", req.row.name))
+                .build()
+
         val results = datastore.run(query)
 
-        val playerStats = mutableListOf<Map<String, String>>()
+        datastore.put(
+            Entity("PlayerStatTest").also {
+                setKey(results[0].getKey())
+
+                // set fields to req.row
+            }
+        )
+
+        datastore.put(
+            Entity("ChangelogTest").also {
+                // set fields to req fields
+            })
+    }
+
+    private fun mapQueryResultsToListOfRows(results: QueryResults<Entity>): List<Map<String, String>> {
+        val resultsMapped = mutableListOf<Map<String, String>>()
 
         while (results.hasNext()) {
             val queryRow = results.next()
-            val playerRow = mutableMapOf<String, String>()
+            val rowMap = mutableMapOf<String, String>()
             for (key in queryRow.names) {
                 try {
-                    playerRow[key] = queryRow.getLong(key).toString()
+                    rowMap[key] = queryRow.getLong(key).toString()
                 } catch (e: ClassCastException) {
-                    playerRow[key] = queryRow.getString(key)
+                    rowMap[key] = queryRow.getString(key)
                 }
             }
-            playerStats.add(playerRow)
+            resultsMapped.add(rowMap)
         }
 
-        return playerStats
+        return resultsMapped
     }
-
-//    @GetMapping("/changelog")
-//    fun getChangelog(): String {
-//        val datastore = DatastoreOptions
-//                .newBuilder()
-//                .setProjectId("undead-darts-1")
-//                .build()
-//                .service
-//
-//        val query = Query
-//                .newEntityQueryBuilder()
-//                .setKind("ChangelogTest")
-//                .setLimit(20)
-//                .setOrderBy(OrderBy.desc("timestamp"))
-//                .build()
-//
-//        val results = datastore.run(query)
-//    }
-//
-//    @GetMapping("/seasons")
-//    fun getSeasons(): List<String> {
-//        val datastore = DatastoreOptions
-//                .newBuilder()
-//                .setProjectId("undead-darts-1")
-//                .build()
-//                .service
-//
-//        val query = Query
-//                .newProjectionEntityQueryBuilder()
-//                .setKind("PlayerStatTest")
-//                .setProjection("season")
-//                .setDistinctOn("season")
-//                .build()
-//
-//        val seasons = datastore.run(query)
-//            .first
-//            .map { row -> row.season }
-//
-//        return seasons
-//    }
-//
-//    @PostMapping("/add-player")
-//    fun addPlayer(@RequestBody req: CreatePlayerRequest) {
-//        val datastore = DatastoreOptions
-//                .newBuilder()
-//                .setProjectId("undead-darts-1")
-//                .build()
-//                .service
-//
-//        datastore.put(
-//            Entity("PlayerStatTest").also {
-//                // set fields to req fields
-//            })
-//    }
-//
-//    @PostMapping("/add-season")
-//    fun addSeason(@RequestBody req: CreateSeasonRequest) {
-//        val datastore = DatastoreOptions
-//                .newBuilder()
-//                .setProjectId("undead-darts-1")
-//                .build()
-//                .service
-//
-//        req.names.forEach { name ->
-//            datastore.put(
-//                Entity("PlayerStatTest").also {
-//                    setProperty("statversion", req.statversion)
-//                    setProperty("name", name)
-//                    setProperty("season", req.id)
-//                    // set other stat fields to 0
-//                })
-//        }
-//    }
-//
-//    @PostMapping("/update-stat")
-//    fun updateStat(@RequestBody req: UpdateStatRequest) {
-//        val datastore = DatastoreOptions
-//                .newBuilder()
-//                .setProjectId("undead-darts-1")
-//                .build()
-//                .service
-//
-//        val query = Query
-//                .newEntityQueryBuilder()
-//                .setKind("PlayerStatTest")
-//                .setFilter(PropertyFilter.eq("season", req.row.season))
-//                .setFilter(PropertyFilter.eq("name", req.row.name))
-//                .build()
-//
-//        val results = datastore.run(query)
-//
-//        datastore.put(
-//            Entity("PlayerStatTest").also {
-//                setKey(results[0].getKey())
-//
-//                // set fields to req.row
-//            }
-//        )
-//
-//        datastore.put(
-//            Entity("ChangelogTest").also {
-//                // set fields to req fields
-//            })
-//    }
 }
