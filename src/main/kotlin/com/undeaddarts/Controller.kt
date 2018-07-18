@@ -175,7 +175,11 @@ class Controller {
                 try {
                     rowMap[key] = queryRow.getLong(key).toString()
                 } catch (e: ClassCastException) {
-                    rowMap[key] = queryRow.getString(key)
+                    try {
+                        rowMap[key] = queryRow.getString(key)
+                    } catch (e: ClassCastException) {
+                        rowMap[key] = queryRow.getDouble(key).toString()
+                    }
                 }
             }
             resultsMapped.add(rowMap)
