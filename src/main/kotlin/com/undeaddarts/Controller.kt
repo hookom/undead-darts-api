@@ -31,23 +31,6 @@ data class UpdateStatRequest(
 @RestController
 class Controller {
 
-    @GetMapping("/stats/{season}")
-    fun getStatsBySeason(@PathVariable season: String): List<Map<String, String>> {
-        val datastore = DatastoreOptions
-                .newBuilder()
-                .setProjectId("undead-darts-1")
-                .build()
-                .service
-
-        val query = Query
-                .newEntityQueryBuilder()
-                .setKind("PlayerStatTest")
-                .setFilter(StructuredQuery.PropertyFilter.eq("season", season))
-                .build()
-
-        return mapQueryResultsToListOfRows(datastore.run(query))
-    }
-
     @GetMapping("/stats")
     fun getStats(): List<Map<String, String>> {
         val datastore = DatastoreOptions
@@ -81,25 +64,32 @@ class Controller {
 
         return mapQueryResultsToListOfRows(datastore.run(query))
     }
-//
-//    @GetMapping("/seasons")
-//    fun getSeasons(): List<String> {
-//        val datastore = DatastoreOptions
-//                .newBuilder()
-//                .setProjectId("undead-darts-1")
-//                .build()
-//                .service
-//
-//        val query = Query
-//                .newProjectionEntityQueryBuilder()
-//                .setKind("PlayerStatTest")
-//                .setProjection("season")
-//                .setDistinctOn("season")
-//                .build()
-//
-//        return mapQueryResultsToListOfRows(datastore.run(query))
-//                .map { row -> row.season }
-//    }
+
+    @PostMapping("/update-stat")
+    fun updateStat(@RequestBody req: UpdateStatRequest) {
+        val datastore = DatastoreOptions
+                .newBuilder()
+                .setProjectId("undead-darts-1")
+                .build()
+                .service
+
+        val query = Query
+                .newEntityQueryBuilder()
+                .setKind("PlayerStatTest")
+                .setFilter(StructuredQuery.PropertyFilter.eq("season", req.row.season))
+                .setFilter(StructuredQuery.PropertyFilter.eq("name", req.row.name))
+                .build()
+
+        val results = datastore.run(query)
+
+        val updatedRow = results.next().also {
+            it.names.forEach { key -> it.get(key ) }
+        }
+        datastore.put(updatedRow)
+
+        val changelogRow = Entity.newBuilder().build()
+        datastore.put(changelogRow)
+    }
 //
 //    @PostMapping("/add-player")
 //    fun addPlayer(@RequestBody req: CreatePlayerRequest) {
@@ -133,37 +123,6 @@ class Controller {
 //                })
 //        }
 //    }
-//
-//    @PostMapping("/update-stat")
-//    fun updateStat(@RequestBody req: UpdateStatRequest) {
-//        val datastore = DatastoreOptions
-//                .newBuilder()
-//                .setProjectId("undead-darts-1")
-//                .build()
-//                .service
-//
-//        val query = Query
-//                .newEntityQueryBuilder()
-//                .setKind("PlayerStatTest")
-//                .setFilter(PropertyFilter.eq("season", req.row.season))
-//                .setFilter(PropertyFilter.eq("name", req.row.name))
-//                .build()
-//
-//        val results = datastore.run(query)
-//
-//        datastore.put(
-//            Entity("PlayerStatTest").also {
-//                setKey(results[0].getKey())
-//
-//                // set fields to req.row
-//            }
-//        )
-//
-//        datastore.put(
-//            Entity("ChangelogTest").also {
-//                // set fields to req fields
-//            })
-//    }
 
     private fun mapQueryResultsToListOfRows(results: QueryResults<Entity>): List<Map<String, String>> {
         val resultsMapped = mutableListOf<Map<String, String>>()
@@ -186,5 +145,9 @@ class Controller {
         }
 
         return resultsMapped
+    }
+
+    private fun toPlayerStat(entity: Entity): PlayerStat {
+
     }
 }
