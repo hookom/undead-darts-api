@@ -65,30 +65,47 @@ class Controller {
         return mapQueryResultsToListOfRows(datastore.run(query))
     }
 
-    @PostMapping("/update-stat")
-    fun updateStat(@RequestBody req: UpdateStatRequest) {
+    @GetMapping("/update-stat")
+    fun updateStat(): Map<String, String> {
         val datastore = DatastoreOptions
                 .newBuilder()
                 .setProjectId("undead-darts-1")
                 .build()
                 .service
 
-        val query = Query
-                .newEntityQueryBuilder()
-                .setKind("PlayerStatTest")
-                .setFilter(StructuredQuery.PropertyFilter.eq("season", req.row.season))
-                .setFilter(StructuredQuery.PropertyFilter.eq("name", req.row.name))
-                .build()
+        val keyFactory = datastore.newKeyFactory().setKind("PlayerStatTest")
 
-        val results = datastore.run(query)
-
-        val updatedRow = results.next().also {
-            it.names.forEach { key -> it.get(key ) }
+        val entity = datastore.get(keyFactory.newKey("Isaac-27"))
+        val rowMap = mutableMapOf<String, String>()
+        for (key in entity.names) {
+            try {
+                rowMap[key] = entity.getLong(key).toString()
+            } catch (e: ClassCastException) {
+                try {
+                    rowMap[key] = entity.getString(key)
+                } catch (e: ClassCastException) {
+                    rowMap[key] = entity.getDouble(key).toString()
+                }
+            }
         }
-        datastore.put(updatedRow)
+        return rowMap
 
-        val changelogRow = Entity.newBuilder().build()
-        datastore.put(changelogRow)
+//        val query = Query
+//                .newEntityQueryBuilder()
+//                .setKind("PlayerStatTest")
+//                .setFilter(StructuredQuery.PropertyFilter.eq("season", req.row.season))
+//                .setFilter(StructuredQuery.PropertyFilter.eq("name", req.row.name))
+//                .build()
+//
+//        val results = datastore.run(query)
+//
+//        val updatedRow = results.next().also {
+//            it.names.forEach { key -> it.get(key ) }
+//        }
+//        datastore.put(updatedRow)
+//
+//        val changelogRow = Entity.newBuilder().build()
+//        datastore.put(changelogRow)
     }
 //
 //    @PostMapping("/add-player")
@@ -147,7 +164,7 @@ class Controller {
         return resultsMapped
     }
 
-    private fun toPlayerStat(entity: Entity): PlayerStat {
-
-    }
+//    private fun toPlayerStat(entity: Entity): PlayerStat {
+//
+//    }
 }
