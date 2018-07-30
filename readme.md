@@ -1,7 +1,10 @@
 # Deployment
 
-## Create bucket
+## Create bucket (should already be there)
 gsutil mb gs://undead-darts-api
+
+# GCLOUD AUTH LOCAL (for new machine or when logged out)
+gcloud auth application-default login
 
 ## Build app
 gradle build
@@ -11,6 +14,3 @@ gsutil cp build/libs/* gs://undead-darts-api/undeaddarts.jar
 
 ## Restart compute VM instance (manual)
 
-
-# GCLOUD AUTH LOCAL
-gcloud auth application-default login

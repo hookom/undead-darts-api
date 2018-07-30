@@ -44,7 +44,7 @@ class Controller {
 
         val query = Query
                 .newEntityQueryBuilder()
-                .setKind("PlayerStatTest")
+                .setKind("PlayerStat")
                 .build()
 
         return mapQueryResultsToListOfRows(datastore.run(query))
@@ -60,7 +60,7 @@ class Controller {
 
         val query = Query
                 .newEntityQueryBuilder()
-                .setKind("ChangelogTest")
+                .setKind("Changelog")
                 .setLimit(20)
                 .setOrderBy(StructuredQuery.OrderBy.desc("timestamp"))
                 .build()
@@ -76,7 +76,7 @@ class Controller {
                 .build()
                 .service
 
-        val keyFactory = datastore.newKeyFactory().setKind("PlayerStatTest")
+        val keyFactory = datastore.newKeyFactory().setKind("PlayerStat")
 
         val keyString = req.stat.name + "-" + req.stat.season
         val updatedRow = Entity.newBuilder(datastore.get(keyFactory.newKey(keyString)))
@@ -88,7 +88,7 @@ class Controller {
         datastore.update(updatedRow)
 
         datastore.put(
-                Entity.newBuilder(keyFactory.setKind("ChangelogTest").newKey())
+                Entity.newBuilder(keyFactory.setKind("Changelog").newKey())
                         .set("message", req.changelog.message)
                         .set("timestamp", req.changelog.timestamp)
                         .build())
