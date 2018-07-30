@@ -3,26 +3,29 @@ package com.undeaddarts
 import com.google.cloud.datastore.*
 import org.springframework.web.bind.annotation.*
 
-data class PlayerStat(
-    val name: String,
-    val statversion: String,
-    val season: String)
-
-data class Change(
-    val message: String,
-    val timestamp: String)
-
 data class CreatePlayerRequest(val name: String)
 
 data class CreateSeasonRequest(
-    val names: List<String>,
-    val id: String,
-    val statversion: String)
+        val names: List<String>,
+        val id: String,
+        val statversion: String)
+
+data class PlayerStatChange(
+        val field: String,
+        val value: Int,
+        val name: String,
+        val season: String
+)
+
+data class Changelog(
+        val message: String,
+        val timestamp: String
+)
 
 data class UpdateStatRequest(
-    val row: PlayerStat,
-    val change: String,
-    val timestamp: String)
+        val stat: PlayerStatChange,
+        val changelog: Changelog
+)
 
 @CrossOrigin(origins = [
     "http://localhost:3000",
@@ -65,8 +68,8 @@ class Controller {
         return mapQueryResultsToListOfRows(datastore.run(query))
     }
 
-    @GetMapping("/update-stat")
-    fun updateStat(): Map<String, String> {
+    @PostMapping("/update-stat")
+    fun updateStat(@RequestBody req: UpdateStatRequest) {
         val datastore = DatastoreOptions
                 .newBuilder()
                 .setProjectId("undead-darts-1")
@@ -75,37 +78,20 @@ class Controller {
 
         val keyFactory = datastore.newKeyFactory().setKind("PlayerStatTest")
 
-        val entity = datastore.get(keyFactory.newKey("Isaac-27"))
-        val rowMap = mutableMapOf<String, String>()
-        for (key in entity.names) {
-            try {
-                rowMap[key] = entity.getLong(key).toString()
-            } catch (e: ClassCastException) {
-                try {
-                    rowMap[key] = entity.getString(key)
-                } catch (e: ClassCastException) {
-                    rowMap[key] = entity.getDouble(key).toString()
+        val keyString = req.stat.name + "-" + req.stat.season
+        val updatedRow = Entity.newBuilder(datastore.get(keyFactory.newKey(keyString)))
+                .apply {
+                    set(req.stat.field, req.stat.value.toLong()).build()
                 }
-            }
-        }
-        return rowMap
+                .build()
 
-//        val query = Query
-//                .newEntityQueryBuilder()
-//                .setKind("PlayerStatTest")
-//                .setFilter(StructuredQuery.PropertyFilter.eq("season", req.row.season))
-//                .setFilter(StructuredQuery.PropertyFilter.eq("name", req.row.name))
-//                .build()
-//
-//        val results = datastore.run(query)
-//
-//        val updatedRow = results.next().also {
-//            it.names.forEach { key -> it.get(key ) }
-//        }
-//        datastore.put(updatedRow)
-//
-//        val changelogRow = Entity.newBuilder().build()
-//        datastore.put(changelogRow)
+        datastore.update(updatedRow)
+
+        datastore.put(
+                Entity.newBuilder(keyFactory.setKind("ChangelogTest").newKey())
+                        .set("message", req.changelog.message)
+                        .set("timestamp", req.changelog.timestamp)
+                        .build())
     }
 //
 //    @PostMapping("/add-player")
@@ -163,8 +149,4 @@ class Controller {
 
         return resultsMapped
     }
-
-//    private fun toPlayerStat(entity: Entity): PlayerStat {
-//
-//    }
 }
