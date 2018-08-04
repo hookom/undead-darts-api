@@ -30,7 +30,9 @@ data class UpdateStatRequest(
 @CrossOrigin(origins = [
     "http://localhost:3000",
     "https://undead-darts-1.appspot.com",
-    "http://undead-darts-1.appspot.com"])
+    "http://undead-darts-1.appspot.com",
+    "http://undeaddarts.com",
+    "https://undeaddarts.com"])
 @RestController
 class Controller {
 
