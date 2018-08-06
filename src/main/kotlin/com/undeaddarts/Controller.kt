@@ -2,6 +2,7 @@ package com.undeaddarts
 
 import com.google.cloud.datastore.*
 import org.springframework.web.bind.annotation.*
+import javax.servlet.http.HttpServletRequest
 
 data class CreatePlayersRequest(
         val names: List<String>,
@@ -35,7 +36,12 @@ data class UpdateStatRequest(
 class Controller {
 
     @GetMapping("/stats")
-    fun getStats(): List<Map<String, String>> {
+    fun getStats(request: HttpServletRequest): List<Map<String, String>> {
+        var testEnvSuffix = ""
+        if (request.requestURL.contains("localhost")) {
+            testEnvSuffix = "Test"
+        }
+
         val datastore = DatastoreOptions
                 .newBuilder()
                 .setProjectId("undead-darts-1")
@@ -44,7 +50,7 @@ class Controller {
 
         val query = Query
                 .newEntityQueryBuilder()
-                .setKind("PlayerStat")
+                .setKind("PlayerStat" + testEnvSuffix)
                 .build()
 
         return mapQueryResultsToListOfRows(datastore.run(query))
