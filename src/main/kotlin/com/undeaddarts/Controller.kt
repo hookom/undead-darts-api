@@ -3,9 +3,7 @@ package com.undeaddarts
 import com.google.cloud.datastore.*
 import org.springframework.web.bind.annotation.*
 
-data class CreatePlayerRequest(val name: String)
-
-data class CreateSeasonRequest(
+data class CreatePlayersRequest(
         val names: List<String>,
         val id: String,
         val statversion: String)
@@ -95,39 +93,48 @@ class Controller {
                         .set("timestamp", req.changelog.timestamp)
                         .build())
     }
-//
-//    @PostMapping("/add-player")
-//    fun addPlayer(@RequestBody req: CreatePlayerRequest) {
-//        val datastore = DatastoreOptions
-//                .newBuilder()
-//                .setProjectId("undead-darts-1")
-//                .build()
-//                .service
-//
-//        datastore.put(
-//            Entity("PlayerStatTest").also {
-//                // set fields to req fields
-//            })
-//    }
-//
-//    @PostMapping("/add-season")
-//    fun addSeason(@RequestBody req: CreateSeasonRequest) {
-//        val datastore = DatastoreOptions
-//                .newBuilder()
-//                .setProjectId("undead-darts-1")
-//                .build()
-//                .service
-//
-//        req.names.forEach { name ->
-//            datastore.put(
-//                Entity("PlayerStatTest").also {
-//                    setProperty("statversion", req.statversion)
-//                    setProperty("name", name)
-//                    setProperty("season", req.id)
-//                    // set other stat fields to 0
-//                })
-//        }
-//    }
+
+    @PostMapping("/add-season")
+    fun addSeason(@RequestBody req: CreatePlayersRequest) {
+        val datastore = DatastoreOptions
+                .newBuilder()
+                .setProjectId("undead-darts-1")
+                .build()
+                .service
+
+        val keyFactory = datastore.newKeyFactory().setKind("PlayerStat")
+
+        req.names.forEach { name ->
+            val keyString = name + "-" + req.id
+            datastore.put(
+                    Entity.newBuilder(keyFactory.newKey(keyString))
+                            .set("name", name)
+                            .set("season", req.id)
+                            .set("statversion", req.statversion)
+                            .build())
+        }
+    }
+
+    @PostMapping("/add-player")
+    fun addPlayer(@RequestBody req: CreatePlayersRequest) {
+        val datastore = DatastoreOptions
+                .newBuilder()
+                .setProjectId("undead-darts-1")
+                .build()
+                .service
+
+        val keyFactory = datastore.newKeyFactory().setKind("PlayerStat")
+
+        req.names.forEach { name ->
+            val keyString = name + "-" + req.id
+            datastore.put(
+                    Entity.newBuilder(keyFactory.newKey(keyString))
+                            .set("name", name)
+                            .set("season", req.id)
+                            .set("statversion", req.statversion)
+                            .build())
+        }
+    }
 
     private fun mapQueryResultsToListOfRows(results: QueryResults<Entity>): List<Map<String, String>> {
         val resultsMapped = mutableListOf<Map<String, String>>()
