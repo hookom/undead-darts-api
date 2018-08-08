@@ -7,7 +7,8 @@ import javax.servlet.http.HttpServletRequest
 data class CreatePlayersRequest(
         val names: List<String>,
         val id: String,
-        val statversion: String)
+        val statversion: String,
+        val stats: List<String>)
 
 data class PlayerStatChange(
         val field: String,
@@ -120,6 +121,15 @@ class Controller {
                             .set("name", name)
                             .set("season", body.id)
                             .set("statversion", body.statversion)
+                            .also { newRow ->
+                                body.stats.forEach { stat ->
+                                    newRow.set(stat, 0)
+                                }
+
+                                if (name == "ZOMBIES") {
+                                    newRow.set("zombiewins", 0)
+                                }
+                            }
                             .build())
         }
     }
@@ -143,6 +153,11 @@ class Controller {
                             .set("name", name)
                             .set("season", body.id)
                             .set("statversion", body.statversion)
+                            .also { newRow ->
+                                body.stats.forEach { stat ->
+                                    newRow.set(stat, 0)
+                                }
+                            }
                             .build())
         }
     }
