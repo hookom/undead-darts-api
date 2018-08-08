@@ -2,6 +2,7 @@ package com.undeaddarts
 
 import com.google.cloud.datastore.*
 import org.springframework.web.bind.annotation.*
+import javax.servlet.http.HttpServletRequest
 
 data class CreatePlayersRequest(
         val names: List<String>,
@@ -35,7 +36,9 @@ data class UpdateStatRequest(
 class Controller {
 
     @GetMapping("/stats")
-    fun getStats(): List<Map<String, String>> {
+    fun getStats(request: HttpServletRequest): List<Map<String, String>> {
+        var testEnvSuffix = determineSuffix(request)
+
         val datastore = DatastoreOptions
                 .newBuilder()
                 .setProjectId("undead-darts-1")
@@ -44,14 +47,16 @@ class Controller {
 
         val query = Query
                 .newEntityQueryBuilder()
-                .setKind("PlayerStat")
+                .setKind("PlayerStat" + testEnvSuffix)
                 .build()
 
         return mapQueryResultsToListOfRows(datastore.run(query))
     }
 
     @GetMapping("/changelog")
-    fun getChangelog(): List<Map<String, String>> {
+    fun getChangelog(request: HttpServletRequest): List<Map<String, String>> {
+        var testEnvSuffix = determineSuffix(request)
+        
         val datastore = DatastoreOptions
                 .newBuilder()
                 .setProjectId("undead-darts-1")
@@ -60,7 +65,7 @@ class Controller {
 
         val query = Query
                 .newEntityQueryBuilder()
-                .setKind("Changelog")
+                .setKind("Changelog" + testEnvSuffix)
                 .setLimit(20)
                 .setOrderBy(StructuredQuery.OrderBy.desc("timestamp"))
                 .build()
@@ -69,69 +74,75 @@ class Controller {
     }
 
     @PostMapping("/update-stat")
-    fun updateStat(@RequestBody req: UpdateStatRequest) {
+    fun updateStat(@RequestBody body: UpdateStatRequest, request: HttpServletRequest) {
+        var testEnvSuffix = determineSuffix(request)
+        
         val datastore = DatastoreOptions
                 .newBuilder()
                 .setProjectId("undead-darts-1")
                 .build()
                 .service
 
-        val keyFactory = datastore.newKeyFactory().setKind("PlayerStat")
+        val keyFactory = datastore.newKeyFactory().setKind("PlayerStat" + testEnvSuffix)
 
-        val keyString = req.stat.name + "-" + req.stat.season
+        val keyString = body.stat.name + "-" + body.stat.season
         val updatedRow = Entity.newBuilder(datastore.get(keyFactory.newKey(keyString)))
                 .apply {
-                    set(req.stat.field, req.stat.value.toLong()).build()
+                    set(body.stat.field, body.stat.value.toLong()).build()
                 }
                 .build()
 
         datastore.update(updatedRow)
 
         datastore.put(
-                Entity.newBuilder(keyFactory.setKind("Changelog").newKey())
-                        .set("message", req.changelog.message)
-                        .set("timestamp", req.changelog.timestamp)
+                Entity.newBuilder(keyFactory.setKind("Changelog" + testEnvSuffix).newKey())
+                        .set("message", body.changelog.message)
+                        .set("timestamp", body.changelog.timestamp)
                         .build())
     }
 
     @PostMapping("/add-season")
-    fun addSeason(@RequestBody req: CreatePlayersRequest) {
+    fun addSeason(@RequestBody body: CreatePlayersRequest, request: HttpServletRequest) {
+        var testEnvSuffix = determineSuffix(request)
+        
         val datastore = DatastoreOptions
                 .newBuilder()
                 .setProjectId("undead-darts-1")
                 .build()
                 .service
 
-        val keyFactory = datastore.newKeyFactory().setKind("PlayerStat")
+        val keyFactory = datastore.newKeyFactory().setKind("PlayerStat" + testEnvSuffix)
 
-        req.names.forEach { name ->
-            val keyString = name + "-" + req.id
+        body.names.forEach { name ->
+            val keyString = name + "-" + body.id
             datastore.put(
                     Entity.newBuilder(keyFactory.newKey(keyString))
                             .set("name", name)
-                            .set("season", req.id)
-                            .set("statversion", req.statversion)
+                            .set("season", body.id)
+                            .set("statversion", body.statversion)
                             .build())
         }
     }
 
     @PostMapping("/add-player")
-    fun addPlayer(@RequestBody req: CreatePlayersRequest) {
+    fun addPlayer(@RequestBody body: CreatePlayersRequest, request: HttpServletRequest) {
+        var testEnvSuffix = determineSuffix(request)
+        
         val datastore = DatastoreOptions
                 .newBuilder()
                 .setProjectId("undead-darts-1")
                 .build()
                 .service
 
-        val keyFactory = datastore.newKeyFactory().setKind("PlayerStat")
+        val keyFactory = datastore.newKeyFactory().setKind("PlayerStat" + testEnvSuffix)
 
-        req.names.forEach { name ->
-            val keyString = name + "-" + req.id
+        body.names.forEach { name ->
+            val keyString = name + "-" + body.id
             datastore.put(
                     Entity.newBuilder(keyFactory.newKey(keyString))
                             .set("name", name)
-                            .set("season", req.id)
-                            .set("statversion", req.statversion)
+                            .set("season", body.id)
+                            .set("statversion", body.statversion)
                             .build())
         }
     }
@@ -157,5 +168,11 @@ class Controller {
         }
 
         return resultsMapped
+    }
+
+    private fun determineSuffix(request: HttpServletRequest): String {
+        return if (request.requestURL.contains("localhost")) {
+            "Test"
+        } else { "" }
     }
 }
