@@ -54,7 +54,7 @@ class Controller {
     }
 
     @GetMapping("/changelog")
-    fun getChangelog(): List<Map<String, String>> {
+    fun getChangelog(request: HttpServletRequest): List<Map<String, String>> {
         var testEnvSuffix = determineSuffix(request)
         
         val datastore = DatastoreOptions
@@ -74,7 +74,7 @@ class Controller {
     }
 
     @PostMapping("/update-stat")
-    fun updateStat(@RequestBody req: UpdateStatRequest) {
+    fun updateStat(@RequestBody body: UpdateStatRequest, request: HttpServletRequest) {
         var testEnvSuffix = determineSuffix(request)
         
         val datastore = DatastoreOptions
@@ -85,10 +85,10 @@ class Controller {
 
         val keyFactory = datastore.newKeyFactory().setKind("PlayerStat" + testEnvSuffix)
 
-        val keyString = req.stat.name + "-" + req.stat.season
+        val keyString = body.stat.name + "-" + body.stat.season
         val updatedRow = Entity.newBuilder(datastore.get(keyFactory.newKey(keyString)))
                 .apply {
-                    set(req.stat.field, req.stat.value.toLong()).build()
+                    set(body.stat.field, body.stat.value.toLong()).build()
                 }
                 .build()
 
@@ -96,13 +96,13 @@ class Controller {
 
         datastore.put(
                 Entity.newBuilder(keyFactory.setKind("Changelog" + testEnvSuffix).newKey())
-                        .set("message", req.changelog.message)
-                        .set("timestamp", req.changelog.timestamp)
+                        .set("message", body.changelog.message)
+                        .set("timestamp", body.changelog.timestamp)
                         .build())
     }
 
     @PostMapping("/add-season")
-    fun addSeason(@RequestBody req: CreatePlayersRequest) {
+    fun addSeason(@RequestBody body: CreatePlayersRequest, request: HttpServletRequest) {
         var testEnvSuffix = determineSuffix(request)
         
         val datastore = DatastoreOptions
@@ -113,19 +113,19 @@ class Controller {
 
         val keyFactory = datastore.newKeyFactory().setKind("PlayerStat" + testEnvSuffix)
 
-        req.names.forEach { name ->
-            val keyString = name + "-" + req.id
+        body.names.forEach { name ->
+            val keyString = name + "-" + body.id
             datastore.put(
                     Entity.newBuilder(keyFactory.newKey(keyString))
                             .set("name", name)
-                            .set("season", req.id)
-                            .set("statversion", req.statversion)
+                            .set("season", body.id)
+                            .set("statversion", body.statversion)
                             .build())
         }
     }
 
     @PostMapping("/add-player")
-    fun addPlayer(@RequestBody req: CreatePlayersRequest) {
+    fun addPlayer(@RequestBody body: CreatePlayersRequest, request: HttpServletRequest) {
         var testEnvSuffix = determineSuffix(request)
         
         val datastore = DatastoreOptions
@@ -136,13 +136,13 @@ class Controller {
 
         val keyFactory = datastore.newKeyFactory().setKind("PlayerStat" + testEnvSuffix)
 
-        req.names.forEach { name ->
-            val keyString = name + "-" + req.id
+        body.names.forEach { name ->
+            val keyString = name + "-" + body.id
             datastore.put(
                     Entity.newBuilder(keyFactory.newKey(keyString))
                             .set("name", name)
-                            .set("season", req.id)
-                            .set("statversion", req.statversion)
+                            .set("season", body.id)
+                            .set("statversion", body.statversion)
                             .build())
         }
     }
