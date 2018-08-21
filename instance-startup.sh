@@ -5,8 +5,8 @@ BUCKET=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/at
 
 echo "Project ID: ${PROJECTID} Bucket: ${BUCKET}"
 
-# Get the files we need
-gsutil cp gs://${BUCKET}/undeaddarts.jar .
+# Get the files we need (this will require that Google Cloud Storage JSON API is enabled for the project)
+sudo gsutil cp gs://${BUCKET}/undeaddarts.jar .
 
 # Install dependencies
 apt-get update
